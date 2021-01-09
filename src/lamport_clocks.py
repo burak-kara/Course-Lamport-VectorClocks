@@ -6,6 +6,7 @@ Created on Sun Dec 27 23:33:01 2020
 """
 
 from multiprocessing import Process, Pipe
+from os import getpid
 from datetime import datetime
 
 
@@ -14,35 +15,32 @@ def local_time(counter):
 
 
 def calc_recv_timestamp(recv_time_stamp, counter):
-    for id in range(len(counter)):
-        counter[id] = max(recv_time_stamp[id], counter[id])
-    return counter
+    return max(recv_time_stamp, counter) + 1
 
 
 def event(pid, counter):
-    counter[pid] += 1
+    counter += 1
     print('Something happened in {} !'.format(pid) + local_time(counter))
     return counter
 
 
 def send_message(pipe, pid, counter):
-    counter[pid] += 1
+    counter += 1
     pipe.send(('Empty shell', counter))
-    print('Message sent from ' + str(pid) + " " + local_time(counter))
+    print('Message sent from ' + str(pid) + local_time(counter))
     return counter
 
 
 def recv_message(pipe, pid, counter):
     message, timestamp = pipe.recv()
     counter = calc_recv_timestamp(timestamp, counter)
-    counter[pid] += 1
-    print('Message received at ' + str(pid) + " " + local_time(counter))
+    print('Message received at ' + str(pid) + local_time(counter))
     return counter
 
 
 def process_zero(pipe01, pipe02):
-    pid = 0
-    counter = [0, 0, 0]
+    pid = getpid()
+    counter = 0
     counter = event(pid, counter)  # 1
     counter = send_message(pipe01, pid, counter)  # 2
     counter = recv_message(pipe01, pid, counter)  # 3
@@ -53,16 +51,16 @@ def process_zero(pipe01, pipe02):
 
 
 def process_one(pipe10):
-    pid = 1
-    counter = [0, 0, 0]
+    pid = getpid()
+    counter = 0
     counter = send_message(pipe10, pid, counter)  # 1
     counter = recv_message(pipe10, pid, counter)  # 3
     counter = recv_message(pipe10, pid, counter)  # 7
 
 
 def process_two(pipe20):
-    pid = 2
-    counter = [0, 0, 0]
+    pid = getpid()
+    counter = 0
     counter = event(pid, counter)  # 1
     counter = send_message(pipe20, pid, counter)  # 2
     counter = recv_message(pipe20, pid, counter)  # 5
